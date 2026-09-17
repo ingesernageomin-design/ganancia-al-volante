@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Ganancia al Volante v1.5</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f4f6f8;color:#17202a;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+.app{max-width:430px;margin:auto;min-height:100vh;padding-bottom:82px}.top{padding:16px;display:flex;justify-content:space-between}.logo{font-size:22px;font-weight:900}.logo b{color:#ff7a00}.date,.muted{color:#707984;font-size:12px}
+main{padding:0 12px}.screen{display:none}.screen.active{display:block}.card{background:#fff;border:1px solid #e7eaee;border-radius:18px;padding:14px;margin:10px 0}
+.hero{background:linear-gradient(145deg,#18212b,#303b47);color:#fff;border-radius:22px;padding:18px}.eyebrow{font-size:10px;opacity:.7}.profit{font-size:37px;font-weight:900;margin:3px 0 13px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.mini{background:#ffffff18;border-radius:12px;padding:9px}.mini b{display:block}.mini small{opacity:.7}
+.row{display:flex;justify-content:space-between;gap:8px;align-items:center}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+button{cursor:pointer}.btn{width:100%;border:0;border-radius:14px;padding:13px;font-weight:850}.primary{background:#ff7a00;color:#fff}.secondary{background:#fff;border:1px solid #e7eaee}
+.quick{padding:18px 5px;border:1px solid #e7eaee;background:#fff;border-radius:17px;font-weight:900}.quick span{display:block;font-size:25px}
+.progress{height:8px;background:#edf0f2;border-radius:20px;overflow:hidden}.fill{height:100%;background:#ff7a00;width:0}
+.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(430px,100%);height:68px;background:#fff;border-top:1px solid #e7eaee;display:grid;grid-template-columns:repeat(4,1fr);z-index:10}.nav button{border:0;background:none;color:#707984;font-size:10px}.nav .on{color:#ff7a00;font-weight:900}
+.fab{width:100%;margin:10px 0 14px}.modal{position:fixed;inset:0;background:#0008;display:none;align-items:flex-end;z-index:20}.modal.open{display:flex}
+.sheet{width:min(430px,100%);margin:auto;background:#fff;border-radius:22px 22px 0 0;padding:16px;max-height:92vh;overflow:auto}.x{float:right;border:0;border-radius:50%;width:32px;height:32px}
+input,select{width:100%;padding:12px;border:1px solid #e7eaee;border-radius:12px;font-size:15px;margin:5px 0 10px}label{font-size:12px;color:#707984}.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.list{padding:11px 0;border-bottom:1px solid #e7eaee}.green{color:#18a957}.red{color:#d94a4a}.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.tabs button{padding:10px;border:1px solid #e7eaee;background:white;border-radius:10px}.tabs .sel{background:#fff0e5;color:#b85400}
+.menu{display:grid;gap:8px}.menu button{text-align:left;background:#fff;border:1px solid #e7eaee;border-radius:14px;padding:13px;font-weight:800}.menu small{display:block;color:#707984;font-weight:500;margin-top:3px}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#fff0e5;color:#b85400;font-size:11px;font-weight:800}.info{background:#f7f8fa;border-radius:12px;padding:12px;margin:10px 0}
+
+body.dark{background:#111820;color:#eef2f5}
+body.dark .card,body.dark .quick,body.dark .secondary,body.dark .menu button,
+body.dark .nav,body.dark .sheet,body.dark input,body.dark select,
+body.dark .tabs button{background:#1d2732;color:#eef2f5;border-color:#344250}
+body.dark .muted,body.dark label,body.dark .date{color:#aeb8c2}
+body.dark .progress{background:#344250}
+body.dark .info{background:#26313d}
+body.dark .nav{border-top-color:#344250}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<div class="app">
+<header class="top"><div><div class="logo">Ganancia al Volante <small style="font-size:10px;color:#707984">v1.5</small></div><div class="date" id="date"></div></div><span>🔔</span></header>
+<main>
+<section id="home" class="screen active">
+<div class="hero"><div class="eyebrow">GANANCIA REAL DE HOY</div><div class="profit" id="profit">$0</div><div class="grid">
+<div class="mini"><b id="income">$0</b><small>Ingresos</small></div><div class="mini"><b id="expense">$0</b><small>Gastos</small></div>
+<div class="mini"><b id="hour">$0</b><small>Ganancia/h</small></div><div class="mini"><b id="km">$0</b><small>Ganancia/km</small></div></div></div>
+<div class="card"><div class="row"><b>⛽ Costo estimado de combustible</b><b id="fuelCost">$0</b></div>
+<p class="muted" id="fuelInfo">0 km recorridos · promedio aplicado: $0 por km.</p>
+<p class="muted">Precio actual configurado: combustible · se conserva al guardar.</p>
+<p class="muted">Cada viaje conserva el precio y rendimiento vigentes al momento de guardarlo.</p>
+<b style="font-size:11px;color:#b85400">Ya está descontado de tu ganancia. No lo registres nuevamente como “Otros gastos”.</b>
+<button class="btn secondary" style="margin-top:10px" onclick="openFuel()">Revisión semanal: actualizar precio</button></div>
+<div class="card"><div class="row"><b>🎯 Meta mensual</b><b id="pct">0%</b></div><div class="progress"><div class="fill" id="fill"></div></div><p class="muted" id="goalText"></p><button class="btn secondary" onclick="openGoal()">Configurar meta</button></div>
+<div class="card"><b>＋ Registrar</b><div class="grid2" style="margin-top:10px"><button class="quick" onclick="journey('trip')"><span>🚗</span>Viaje</button><button class="quick" onclick="journey('day')"><span>📅</span>Jornada</button></div><button class="btn secondary" style="margin-top:9px" onclick="openExpense()">💸 Gasto</button></div>
+<div class="card"><b>⚡ Hoy</b><div class="row muted" style="margin-top:10px"><span>Viajes realizados</span><b id="count">0</b></div><div class="row muted"><span>Km recorridos</span><b id="daykm">0 km</b></div><div class="row muted"><span>Horas trabajadas</span><b id="hours">0,0 h</b></div><div class="row muted"><span>Ingresos</span><b id="incomeToday">$0</b></div><div class="row muted"><span>Gastos</span><b id="expenseToday">$0</b></div><div class="row"><b>Ganancia real</b><b class="green" id="profitToday">$0</b></div></div>
+<div class="fab"><button class="btn secondary" onclick="tripCalc()">🚦 ¿ME CONVIENE ESTE VIAJE?</button></div>
+</section>
+
+<section id="history" class="screen"><div class="card"><div class="tabs"><button class="sel" onclick="period('day',this)">Día</button><button onclick="period('week',this)">Semana</button><button onclick="period('month',this)">Mes</button></div><div id="list"></div></div></section>
+<section id="stats" class="screen"><div class="card"><b>📊 Acumulado</b><p>Ingresos: <b id="si"></b></p><p>Gastos: <b id="se"></b></p><p>Ganancia: <b class="green" id="sp"></b></p><p>Km: <b id="sk"></b></p></div></section>
+
+<section id="profile" class="screen">
+<div class="card"><div class="row"><div><b>👤 Perfil</b><p class="muted">Configuración personal de Ganancia al Volante.</p></div><span class="badge">Mi cuenta</span></div>
+<div class="menu">
+<button onclick="openPlan()">💳 Plan y licencia<small>Revisar plan, estado y vencimiento</small></button>
+<button onclick="openPersonal()">🎨 Personalización<small>Unidades, formato de fecha y preferencias visuales</small></button>
+<button onclick="openVehicle()">🚗 Mi vehículo<small>Vehículo, rendimiento, combustible y mínimos rentables</small></button>
+<button onclick="openConfig()">⚙️ Configuración<small>Preferencias, datos y comportamiento de la aplicación</small></button>
+<button onclick="openHelp()">❓ Ayuda<small>Preguntas frecuentes y cómo usar Ganancia al Volante</small></button>
+<button onclick="openDrivers()">👥 Administrar conductores<small>Crear, renovar o bloquear licencias</small></button>
+</div></div>
+</section>
+</main>
+<nav class="nav"><button class="on" onclick="show('home',this)">⌂<br>Inicio</button><button onclick="show('history',this)">☷<br>Historial</button><button onclick="show('stats',this)">◔<br>Estadísticas</button><button onclick="show('profile',this)">◉<br>Perfil</button></nav>
+</div>
+
+<div id="modal" class="modal"><div class="sheet"><button class="x" onclick="closeM()">×</button><div id="modalContent"></div></div></div>
+
+<script>
+const K='rn12', $=id=>document.getElementById(id), money=n=>new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',maximumFractionDigits:0}).format(n||0), today=()=>new Date().toISOString().slice(0,10);
+let s=JSON.parse(localStorage.getItem(K)||'{"e":[],"goal":850000,"vehicle":"Suzuki Swift 2022","eff":12,"fuel":1500,"minKm":450,"minHour":10000,"maint":0,"dateFmt":"DD/MM/AA","distance":"km","theme":"claro","plan":"30 días"}'),per='day';
+if(!s.licenseExpires){let d=new Date();d.setDate(d.getDate()+30);s.licenseExpires=d.toISOString().slice(0,10);localStorage.setItem(K,JSON.stringify(s));}
+function save(){localStorage.setItem(K,JSON.stringify(s));render()}
+
+function applyTheme(){
+  const theme=s.theme||'claro';
+  const dark=theme==='oscuro' || (theme==='sistema' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  document.body.classList.toggle('dark',dark);
+}
+
+function data(p){let n=new Date(),a=new Date(n);if(p==='day')return s.e.filter(x=>x.d===today());if(p==='week'){a.setDate(n.getDate()-6);return s.e.filter(x=>x.d>=a.toISOString().slice(0,10)&&x.d<=today())}return s.e.filter(x=>x.d.slice(0,7)===today().slice(0,7))}
+function displayDistance(km){
+  const n=+(km||0);
+  return (s.distance||'km')==='millas' ? (n/1.609344).toFixed(1).replace('.',',')+' mi' : Math.round(n)+' km';
+}
+function formatDateValue(iso){
+  if(!iso) return '';
+  const [y,m,d]=String(iso).slice(0,10).split('-');
+  return s.dateFmt==='DD/MM/YYYY' ? `${d}/${m}/${y}` : `${d}/${m}/${String(y).slice(-2)}`;
+}
+function licenseIsActive(){return !s.licenseExpires || today()<=s.licenseExpires;}
+function tripCosts(x){if(x.s!=='trip')return{fuel:0};let eff=+(x.eff||s.eff)||0,fuel=+(x.fuel||s.fuel)||0,k=+(x.k||0);return{fuel:eff>0?k/eff*fuel:0}}
+function calc(a){let income=a.filter(x=>x.t==='i').reduce((q,x)=>q+x.a,0),explicit=a.filter(x=>x.t==='e').reduce((q,x)=>q+x.a,0),fuel=a.reduce((q,x)=>q+tripCosts(x).fuel,0);return{i:income,e:explicit+fuel,explicit,fuel,k:a.reduce((q,x)=>q+(x.k||0),0),m:a.reduce((q,x)=>q+(x.m||0),0)}}
+function render(){
+  applyTheme();
+  let d=calc(data('day')),p=d.i-d.e,fc=d.fuel;
+  $('date').textContent=new Date().toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'});
+  $('profit').textContent=money(p);$('income').textContent=money(d.i);$('expense').textContent=money(d.e);
+  $('hour').textContent=money(d.m?p/(d.m/60):0);$('km').textContent=money(d.k?p/d.k:0);
+  $('fuelCost').textContent=money(fc);
+  $('fuelInfo').textContent=displayDistance(d.k)+' recorridos · promedio aplicado: '+money(d.k?fc/d.k:0)+' por km.';
+  const ft=document.querySelector('#fuelCost')?.parentElement?.parentElement?.querySelectorAll('.muted')[1];
+  if(ft)ft.textContent='Precio actual configurado: '+money(s.fuel)+' por litro · se conserva al guardar.';
+  $('count').textContent=data('day').filter(x=>x.s==='trip').length;
+  $('daykm').textContent=displayDistance(d.k);
+  $('hours').textContent=(d.m/60).toFixed(1).replace('.',',')+' h';
+  $('incomeToday').textContent=money(d.i);$('expenseToday').textContent=money(d.e);$('profitToday').textContent=money(p);
+  let mo=calc(data('month')),pc=s.goal?Math.max(0,Math.min(100,(mo.i-mo.e)/s.goal*100)):0;
+  $('pct').textContent=Math.round(pc)+'%';$('fill').style.width=pc+'%';
+  $('goalText').textContent=money(mo.i-mo.e)+' de '+money(s.goal)+' · faltan '+money(Math.max(0,s.goal-(mo.i-mo.e)));
+  let h=data(per);
+  $('list').innerHTML=h.length?h.slice().reverse().map(x=>`<div class="list"><div class="row"><b class="${x.t==='i'?'green':'red'}">${x.t==='i'?'+':'-'} ${money(x.a)}</b><span>${x.s==='trip'?'🚗 Viaje':x.s==='day'?'📅 Jornada':'💸 Gasto'}</span></div><span class="muted">${formatDateValue(x.d)}${x.pl?' · '+x.pl:''}${x.k?' · '+displayDistance(x.k):''}${x.m?' · '+x.m+' min':''}${x.c?' · '+x.c:''}</span></div>`).join(''):'<p class="muted">Sin registros.</p>';
+  let al=calc(s.e);$('si').textContent=money(al.i);$('se').textContent=money(al.e);$('sp').textContent=money(al.i-al.e);$('sk').textContent=displayDistance(al.k);
+}
+function show(id,b){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));$(id).classList.add('active');document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('on'));b.classList.add('on');render()}
+function openM(c){$('modalContent').innerHTML=c;$('modal').classList.add('open')}function closeM(){$('modal').classList.remove('open')}
+function openPlan(){
+  const active=licenseIsActive();
+  openM(`<h2>💳 Plan y licencia</h2><div class="info"><b>Plan actual</b><p>${s.plan||'30 días'}</p><span class="badge">${active?'Activo':'Vencido'}</span></div><div class="info"><b>Estado de acceso</b><p class="muted">Licencia de este dispositivo: <b>${active?'ACTIVA':'VENCIDA'}</b>.</p><p class="muted">Vencimiento: ${formatDateValue(s.licenseExpires)}</p></div><button class="btn primary" onclick="openPlanStatus()">REVISAR ESTADO</button>`)
+}
+function openPlanStatus(){
+  const active=licenseIsActive();
+  openM(`<h2>📋 Estado de licencia</h2><div class="info"><b>Estado</b><p><span class="badge">${active?'ACTIVA':'VENCIDA'}</span></p><p class="muted">Plan: ${s.plan||'30 días'}</p><p class="muted">Vencimiento: ${formatDateValue(s.licenseExpires)}</p></div><button class="btn secondary" onclick="closeM()">VOLVER</button>`)
+}
+function openPersonal(){openM(`<h2>🎨 Personalización</h2><label>Formato de fecha</label><select id="df"><option>DD/MM/AA</option><option>DD/MM/YYYY</option></select><label>Unidades de distancia</label><select id="du"><option>km</option><option>millas</option></select><label>Tema</label><select id="th"><option>claro</option><option>oscuro</option><option>sistema</option></select><button class="btn primary" onclick="savePersonal()">GUARDAR PERSONALIZACIÓN</button>`);$('df').value=s.dateFmt;$('du').value=s.distance;$('th').value=s.theme}
+function savePersonal(){s.dateFmt=$('df').value;s.distance=$('du').value;s.theme=$('th').value;save();openM(`<h2>✅ Personalización guardada</h2><p class="muted">Tus preferencias fueron guardadas correctamente.</p><button class="btn primary" onclick="closeM()">ACEPTAR</button>`)}
+function openVehicle(){openM(`<h2>🚗 Mi vehículo</h2><label>Vehículo</label><input id="v" value="${s.vehicle||''}"><label>Rendimiento km/L</label><input id="ef" type="number" value="${s.eff||12}"><label>Combustible CLP/L</label><input id="fu" type="number" value="${s.fuel||1500}"><div class="two"><div><label>Mínimo neto CLP/km</label><input id="mk" type="number" value="${s.minKm||450}"></div><div><label>Mínimo neto CLP/hora</label><input id="mh" type="number" value="${s.minHour||10000}"></div></div><button class="btn primary" onclick="saveVehicle()">GUARDAR CONFIGURACIÓN</button>`)}
+function saveVehicle(){s.vehicle=$('v').value;s.eff=+$('ef').value;s.fuel=+$('fu').value;s.minKm=+$('mk').value;s.minHour=+$('mh').value;save();openM(`<h2>✅ Vehículo guardado</h2><p class="muted">La configuración de ${s.vehicle} quedó guardada.</p><button class="btn primary" onclick="closeM()">ACEPTAR</button>`)}
+function openConfig(){openM(`<h2>⚙️ Configuración</h2><div class="menu"><button onclick="closeM();alert('Los registros se guardan en este dispositivo.')">💾 Datos<small>Los datos de actividad se conservan localmente.</small></button><button onclick="closeM();if(confirm('¿Volver los datos de actividad a cero?')){s.e=[];save();alert('Actividad reiniciada.')}">↺ Reiniciar actividad<small>Borra viajes, jornadas y gastos; conserva vehículo y meta.</small></button><button onclick="closeM();alert('Ganancia al Volante v1.5')">ℹ️ Acerca de Ganancia al Volante<small>Tu ruta. Tu ganancia real.</small></button></div>`)}
+function openHelp(){openM(`<h2>❓ Ayuda</h2><div class="info"><b>¿Cómo registro un viaje?</b><p class="muted">En Inicio pulsa Viaje, ingresa monto, km y minutos y guarda.</p></div><div class="info"><b>¿El combustible se descuenta solo?</b><p class="muted">Sí. Ganancia al Volante estima el combustible usando el rendimiento y precio configurados.</p></div><div class="info"><b>¿Dónde cambio mi vehículo?</b><p class="muted">Perfil → Mi vehículo.</p></div><div class="info"><b>¿Dónde veo mi licencia?</b><p class="muted">Perfil → Plan y licencia.</p></div>`)}
+function openDrivers(){openM(`<h2>👥 Administrar conductores</h2><p class="muted">Gestiona las licencias de los conductores de este dispositivo.</p><div class="info"><b>Conductor administrador</b><p class="muted">Cuenta principal · Ganancia al Volante</p><span class="badge">ACTIVA</span></div><button class="btn primary" onclick="openDriverCreate()">＋ CREAR CONDUCTOR</button><button class="btn secondary" style="margin-top:8px" onclick="openDriverList()">VER CONDUCTORES</button>`)}
+function openDriverCreate(){openM(`<h2>＋ Crear conductor</h2><label>Nombre</label><input id="dn"><label>Teléfono</label><input id="dp" inputmode="tel"><label>Días de licencia</label><input id="dd" type="number" value="30"><button class="btn primary" onclick="createDriver()">CREAR LICENCIA</button>`)}
+// === ADMINISTRACION DE CONDUCTORES ===
+// Esta edición administra las licencias localmente en el dispositivo.
+// El control centralizado de licencias requiere configurar Supabase en el despliegue final.
+function openDriverList(){let ds=s.drivers||[];openM(`<h2>👥 Conductores</h2>${ds.length?ds.map((d,i)=>`<div class="info"><div class="row"><b>${d.n}</b><span class="badge">${d.status}</span></div><p class="muted">${d.p||'Sin teléfono'} · ${d.days} días</p><button class="btn secondary" onclick="toggleDriver(${i})">${d.status==='ACTIVA'?'BLOQUEAR':'ACTIVAR'}</button></div>`).join(''):'<p class="muted">Todavía no hay conductores creados.</p>'}<button class="btn primary" onclick="openDriverCreate()">＋ CREAR CONDUCTOR</button>`)}
+
+function createDriver(){
+  let n=$('dn').value.trim(),p=$('dp').value.trim(),days=Math.max(1,+$('dd').value||30);
+  if(!n)return openM(`<h2>⚠️ Falta el nombre</h2><p class="muted">Ingresa el nombre del conductor.</p><button class="btn primary" onclick="closeM()">ACEPTAR</button>`);
+  s.drivers=s.drivers||[];s.drivers.push({n,p,days,status:'ACTIVA',createdAt:new Date().toISOString()});save();
+  openM(`<h2>✅ Licencia creada</h2><p class="muted">Se creó la licencia local de ${n} por ${days} días.</p><button class="btn primary" onclick="closeM()">ACEPTAR</button>`)
+}
+function toggleDriver(i){
+  const d=s.drivers[i];d.status=d.status==='ACTIVA'?'BLOQUEADA':'ACTIVA';save();openDriverList();
+}
+function openGoal(){openM(`<h2>🎯 Meta mensual</h2><label>Ganancia objetivo CLP</label><input id="goal" type="number" value="${s.goal}"><button class="btn primary" onclick="saveGoal()">GUARDAR</button>`)}
+function saveGoal(){s.goal=+$('goal').value;save();openM(`<h2>✅ Meta guardada</h2><p class="muted">Tu objetivo mensual es ${money(s.goal)}.</p><button class="btn primary" onclick="closeM()">ACEPTAR</button>`)}
+function openFuel(){openM(`<h2>⛽ Actualizar combustible</h2><label>Precio combustible CLP/L</label><input id="fprice" type="number" value="${s.fuel}"><p class="muted">Este precio se aplicará a los nuevos registros.</p><button class="btn primary" onclick="saveFuel()">GUARDAR PRECIO</button>`)}
+function saveFuel(){s.fuel=+$('fprice').value;save();openM(`<h2>✅ Precio actualizado</h2><p class="muted">Nuevo precio: ${money(s.fuel)} por litro.</p><button class="btn primary" onclick="closeM()">ACEPTAR</button>`)}
+function journey(t){const unit=(s.distance||'km')==='millas'?'Millas':'Km';openM(`<h2>${t==='trip'?'🚗 Registrar viaje':'📅 Registrar jornada'}</h2><label>Ingreso CLP</label><input id="ia" type="number"><div class="two"><div><label>${unit}</label><input id="ik" type="number"></div><div><label>Minutos</label><input id="im" type="number"></div></div><label>Plataforma</label><select id="ip"><option>Uber</option><option>DiDi</option><option>Cabify</option><option>Otra</option></select><button class="btn primary" onclick="saveJourney('${t}')">GUARDAR</button>`)}
+function saveJourney(t){if(!licenseIsActive())return openM(`<h2>⚠️ Licencia vencida</h2><p class="muted">Renueva la licencia para registrar nuevos viajes o jornadas.</p><button class="btn primary" onclick="openPlan()">REVISAR LICENCIA</button>`);let a=+$('ia').value;if(!a)return openM(`<h2>⚠️ Falta el monto</h2><p class="muted">Ingresa el monto del registro para continuar.</p><button class="btn primary" onclick="closeM()">ACEPTAR</button>`);let entered=+$('ik').value||0,k=(s.distance||'km')==='millas'?entered*1.609344:entered,m=+$('im').value||0,entry={t:'i',s:t,a,k,m,pl:$('ip').value,d:today()};if(t==='trip'){entry.eff=s.eff;entry.fuel=s.fuel} s.e.push(entry);save();openM(`<h2>✅ Registro guardado</h2><p class="muted">${t==='trip'?'El viaje':'La jornada'} quedó registrado correctamente.</p><button class="btn primary" onclick="closeM()">ACEPTAR</button>`)}
+function openExpense(){openM(`<h2>💸 Gasto</h2><label>Monto CLP</label><input id="ea" type="number"><label>Categoría</label><select id="ec"><option>Peajes</option><option>Estacionamiento</option><option>Mantención</option><option>Otros</option></select><button class="btn primary" onclick="saveExpense()">GUARDAR</button>`)}
+function saveExpense(){if(!licenseIsActive())return openM(`<h2>⚠️ Licencia vencida</h2><p class="muted">Renueva la licencia para registrar nuevos gastos.</p><button class="btn primary" onclick="openPlan()">REVISAR LICENCIA</button>`);let a=+$('ea').value;if(!a)return openM(`<h2>⚠️ Falta el monto</h2><p class="muted">Ingresa el monto del gasto para continuar.</p><button class="btn primary" onclick="closeM()">ACEPTAR</button>`);s.e.push({t:'e',s:'expense',a,c:$('ec').value,d:today()});save();openM(`<h2>✅ Gasto guardado</h2><p class="muted">El gasto quedó registrado correctamente.</p><button class="btn primary" onclick="closeM()">ACEPTAR</button>`)}
+function tripCalc(){let x=s.e.slice().reverse().find(x=>x.t==='i'&&x.s==='trip'&&x.k>0&&x.m>0);if(!x)return alert('Primero registra un viaje con km y minutos.');let c=tripCosts(x),fc=c.fuel,net=x.a-fc,pk=net/x.k,ph=net/(x.m/60);openM(`<h2>🚦 ¿Me conviene este viaje?</h2><div class="info"><p>Ingreso: <b>${money(x.a)}</b></p><p>Combustible: <b class="red">−${money(fc)}</b></p><p>Ganancia estimada: <b class="green">${money(net)}</b></p><p><b>${money(pk)}/km</b> · <b>${money(ph)}/h</b></p></div><span class="badge">${pk>=s.minKm&&ph>=s.minHour?'RENTABILIDAD ACEPTABLE':'RENTABILIDAD BAJA'}</span>`)}
+function period(p,b){per=p;document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');render()}
+render();
+</script>
+</body>
+</html>
