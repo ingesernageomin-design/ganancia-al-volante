@@ -36,6 +36,16 @@ body.dark .nav{border-top-color:#344250}
 const SUPABASE_URL = 'https://swbkdspvrqxmdmqiuwmv.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_XY7YW4o2w3OBcSy93mfivg_yhPraWSO';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+    async function ensureAdminAuth(){
+  const {data:{session}}=await sb.auth.getSession();
+  if(session?.user?.email?.toLowerCase()==='ingesernageomin@gmail.com') return true;
+  const email=prompt('Correo del administrador:');
+  const password=prompt('Contraseña del administrador:');
+  if(!email||!password)return false;
+  const {error}=await sb.auth.signInWithPassword({email,password});
+  if(error){alert('No se pudo iniciar sesión: '+error.message);return false;}
+  return true;
+}
 </script>
 </head>
 <body>
