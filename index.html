@@ -140,38 +140,10 @@ function openPlan(){
   const active=licenseIsActive();
   openM(`<h2>💳 Plan y licencia</h2><div class="info"><b>Plan actual</b><p>${s.plan||'30 días'}</p><span class="badge">${active?'Activo':'Vencido'}</span></div><div class="info"><b>Estado de acceso</b><p class="muted">Licencia de este dispositivo: <b>${active?'ACTIVA':'VENCIDA'}</b>.</p><p class="muted">Vencimiento: ${formatDateValue(s.licenseExpires)}</p></div><button class="btn primary" onclick="openPlanStatus()">REVISAR ESTADO</button>`)
 }
-async function openPlanStatus(){
-  const {data:{session}}=await sb.auth.getSession();
-  if(!session?.user?.email){
-    alert('No hay una sesión iniciada.');
-    return;
-  }
-
-  const email=session.user.email.toLowerCase();
-  const {data,error}=await sb.from('driver_licenses')
-    .select('status,expires_at')
-    .eq('email',email)
-    .maybeSingle();
-
-  if(error){
-    alert('No se pudo consultar el estado de la licencia: '+error.message);
-    return;
-  }
-
-  const status=data?.status||'Sin licencia';
-  const expires=data?.expires_at||'';
-  const badge=status==='Activa'?'ACTIVA':status.toUpperCase();
-
-  openM(`
-    <h2>📋 Estado de licencia</h2>
-    <div class="info">
-      <b>Estado</b>
-      <p><span class="badge">${badge}</span></p>
-      ${expires?`<p>Vencimiento: ${expires}</p>`:''}
-    </div>
-  `);
-}
-function openPersonal(){openM(`<h2>🎨 Personalización</h2><label>Formato de fecha</label><select id="df"><option>DD/MM/AA</option><option>DD/MM/YYYY</option></select><label>Unidades de distancia</label><select id="du"><option>km</option><option>millas</option></select><label>Tema</label><select id="th"><option>claro</option><option>oscuro</option><option>sistema</option></select><button class="btn primary" onclick="savePersonal()">GUARDAR PERSONALIZACIÓN</button>`);$('df').value=s.dateFmt;$('du').value=s.distance;$('th').value=s.theme}
+function openPlanStatus(){
+  const active=licenseIsActive();
+  openM(`<h2>📋 Estado de licencia</h2><div class="info"><b>Estado</b><p><span class="badge">${active?'ACTIVA':'VENCIDA'}</span></p></div>`);
+}function openPersonal(){openM(`<h2>🎨 Personalización</h2><label>Formato de fecha</label><select id="df"><option>DD/MM/AA</option><option>DD/MM/YYYY</option></select><label>Unidades de distancia</label><select id="du"><option>km</option><option>millas</option></select><label>Tema</label><select id="th"><option>claro</option><option>oscuro</option><option>sistema</option></select><button class="btn primary" onclick="savePersonal()">GUARDAR PERSONALIZACIÓN</button>`);$('df').value=s.dateFmt;$('du').value=s.distance;$('th').value=s.theme}
 function savePersonal(){s.dateFmt=$('df').value;s.distance=$('du').value;s.theme=$('th').value;save();openM(`<h2>✅ Personalización guardada</h2><p class="muted">Tus preferencias fueron guardadas correctamente.</p><button class="btn primary" onclick="closeM()">ACEPTAR</button>`)}
 function openVehicle(){openM(`<h2>🚗 Mi vehículo</h2><label>Vehículo</label><input id="v" value="${s.vehicle||''}"><label>Rendimiento km/L</label><input id="ef" type="number" value="${s.eff||12}"><label>Combustible CLP/L</label><input id="fu" type="number" value="${s.fuel||1500}"><div class="two"><div><label>Mínimo neto CLP/km</label><input id="mk" type="number" value="${s.minKm||450}"></div><div><label>Mínimo neto CLP/hora</label><input id="mh" type="number" value="${s.minHour||10000}"></div></div><button class="btn primary" onclick="saveVehicle()">GUARDAR CONFIGURACIÓN</button>`)}
 function saveVehicle(){s.vehicle=$('v').value;s.eff=+$('ef').value;s.fuel=+$('fu').value;s.minKm=+$('mk').value;s.minHour=+$('mh').value;save();openM(`<h2>✅ Vehículo guardado</h2><p class="muted">La configuración de ${s.vehicle} quedó guardada.</p><button class="btn primary" onclick="closeM()">ACEPTAR</button>`)}
