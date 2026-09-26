@@ -136,7 +136,29 @@ function render(){
 }
 function show(id,b){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));$(id).classList.add('active');document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('on'));b.classList.add('on');render()}
 function openM(c){$('modalContent').innerHTML=c;$('modal').classList.add('open')}function closeM(){$('modal').classList.remove('open')}
-async function driverLogin(){
+// === RECUPERACION DE CONTRASEÑA ===
+sb.auth.onAuthStateChange(async (event, session) => {
+  if(event !== 'PASSWORD_RECOVERY') return;
+
+  const password = prompt('Ingrese su nueva contraseña:');
+  if(!password) return;
+
+  if(password.length < 6){
+    alert('La contraseña debe tener al menos 6 caracteres.');
+    return;
+  }
+
+  const {error} = await sb.auth.updateUser({password});
+
+  if(error){
+    alert('No se pudo cambiar la contraseña: '+error.message);
+    return;
+  }
+
+  alert('Contraseña actualizada correctamente. Ahora puede iniciar sesión.');
+  await sb.auth.signOut();
+});
+  async function driverLogin(){
   const {data:{session}}=await sb.auth.getSession();
   if(session?.user?.email){
     alert('Sesión iniciada: '+session.user.email);
