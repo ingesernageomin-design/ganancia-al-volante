@@ -281,17 +281,60 @@ function saveVehicle(){s.vehicle=$('v').value;s.eff=+$('ef').value;s.fuel=+$('fu
 function openConfig(){openM(`<h2>⚙️ Configuración</h2><div class="menu"><button onclick="closeM();alert('Los registros se guardan en este dispositivo.')">💾 Datos<small>Los datos de actividad se conservan localmente.</small></button><button onclick="closeM();if(confirm('¿Volver los datos de actividad a cero?')){s.e=[];save();alert('Actividad reiniciada.')}">↺ Reiniciar actividad<small>Borra viajes, jornadas y gastos; conserva vehículo y meta.</small></button><button onclick="closeM();alert('Ganancia al Volante v1.5')">ℹ️ Acerca de Ganancia al Volante<small>Tu ruta. Tu ganancia real.</small></button></div>`)}
 function openHelp(){openM(`<h2>❓ Ayuda</h2><div class="info"><b>¿Cómo registro un viaje?</b><p class="muted">En Inicio pulsa Viaje, ingresa monto, km y minutos y guarda.</p></div><div class="info"><b>¿El combustible se descuenta solo?</b><p class="muted">Sí. Ganancia al Volante estima el combustible usando el rendimiento y precio configurados.</p></div><div class="info"><b>¿Dónde cambio mi vehículo?</b><p class="muted">Perfil → Mi vehículo.</p></div><div class="info"><b>¿Dónde veo mi licencia?</b><p class="muted">Perfil → Plan y licencia.</p></div>`)}
 async function openDrivers(){if(!(await ensureAdminAuth()))return;openM(`<h2>👥 Administrar conductores</h2><p class="muted">Gestiona las licencias de los conductores de este dispositivo.</p><div class="info"><b>Conductor administrador</b><p class="muted">Cuenta principal · Ganancia al Volante</p><span class="badge">ACTIVA</span></div><button class="btn primary" onclick="openDriverCreate()">＋ CREAR CONDUCTOR</button><button class="btn secondary" style="margin-top:8px" onclick="openDriverList()">VER CONDUCTORES</button>`)}
-function openDriverCreate(){openM(`<h2>＋ Crear conductor</h2><label>Nombre</label><input id="dn"><label>Teléfono</label><input id="dp" inputmode="tel"><label>Días de licencia</label><input id="dd" type="number" value="30"><button class="btn primary" onclick="createDriver()">CREAR LICENCIA</button>`)}
-// === ADMINISTRACION DE CONDUCTORES ===
+function openDriverCreate(){openM(`<h2>➕ Crear conductor</h2><label>Correo del conductor</label><input id="dn" type="email" placeholder="correo@ejemplo.com"><label>Días de licencia</label><input id="dd" type="number" value="30" min="1"><button class="btn primary" onclick="createDriver()">CREAR LICENCIA</button>`)}// === ADMINISTRACION DE CONDUCTORES ===
 // Esta edición administra las licencias localmente en el dispositivo.
 // El control centralizado de licencias requiere configurar Supabase en el despliegue final.
-function openDriverList(){let ds=s.drivers||[];openM(`<h2>👥 Conductores</h2>${ds.length?ds.map((d,i)=>`<div class="info"><div class="row"><b>${d.n}</b><span class="badge">${d.status}</span></div><p class="muted">${d.p||'Sin teléfono'} · ${d.days} días</p><button class="btn secondary" onclick="toggleDriver(${i})">${d.status==='ACTIVA'?'BLOQUEAR':'ACTIVAR'}</button></div>`).join(''):'<p class="muted">Todavía no hay conductores creados.</p>'}<button class="btn primary" onclick="openDriverCreate()">＋ CREAR CONDUCTOR</button>`)}
+async function openDriverList(){
+  const {data:licencias,error}=await sb
+    .from('driver_licenses')
+    .select('email,status,expires_at')
+    .order('email');
 
-function createDriver(){
-  let n=$('dn').value.trim(),p=$('dp').value.trim(),days=Math.max(1,+$('dd').value||30);
-  if(!n)return openM(`<h2>⚠️ Falta el nombre</h2><p class="muted">Ingresa el nombre del conductor.</p><button class="btn primary" onclick="closeM()">ACEPTAR</button>`);
-  s.drivers=s.drivers||[];s.drivers.push({n,p,days,status:'ACTIVA',createdAt:new Date().toISOString()});save();
-  openM(`<h2>✅ Licencia creada</h2><p class="muted">Se creó la licencia local de ${n} por ${days} días.</p><button class="btn primary" onclick="closeM()">ACEPTAR</button>`)
+  if(error){
+    alert('No se pudieron cargar las licencias: '+error.message);
+    return;
+  }
+
+  openM(`<h2>👥 Conductores</h2>
+  ${licencias.length
+    ? licencias.map(d=>`
+      <div class="info">
+        <div class="row"><b>${d.email}</b></div>
+        <div class="row">
+          <span class="badge">${d.status}</span>
+          <span>Vence: ${d.expires_at}</span>
+        </div>
+      </div>`).join('')
+    : '<p class="muted">No hay conductores registrados.</p>'}
+  <button class="btn primary" onclick="openDriverCreate()">➕ CREAR CONDUCTOR</button>`);
+}
+async function createDriver(){
+  const email=$('dn').value.trim().toLowerCase();
+  const days=Math.max(1,+$('dd').value||30);
+
+  if(!email){
+    return openM(`<h2>⚠️ Falta el correo</h2>
+    <p class="muted">Ingresa el correo del conductor.</p>
+    <button class="btn primary" onclick="closeM()">ACEPTAR</button>`);
+  }
+
+  const {data,error}=await sb.rpc('admin_create_driver_license',{
+    p_email:email,
+    p_days:days
+  });
+
+  if(error){
+    openM(`<h2>⚠️ No se pudo crear la licencia</h2>
+    <p class="muted">${error.message}</p>
+    <button class="btn primary" onclick="closeM()">ACEPTAR</button>`);
+    return;
+  }
+
+  openM(`<h2>✅ Licencia creada</h2>
+  <p class="muted">Conductor: ${data.email}</p>
+  <p class="muted">Estado: ACTIVA</p>
+  <p class="muted">Vencimiento: ${data.expires_at}</p>
+  <button class="btn primary" onclick="closeM()">ACEPTAR</button>`);
 }
 function toggleDriver(i){
   const d=s.drivers[i];d.status=d.status==='ACTIVA'?'BLOQUEADA':'ACTIVA';save();openDriverList();
