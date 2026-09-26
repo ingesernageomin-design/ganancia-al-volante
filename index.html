@@ -158,25 +158,62 @@ sb.auth.onAuthStateChange(async (event, session) => {
   alert('Contraseña actualizada correctamente. Ahora puede iniciar sesión.');
   await sb.auth.signOut();
 });
-  async function driverLogin(){
+async function driverLogin(){
   const {data:{session}}=await sb.auth.getSession();
-  if(session?.user?.email){
-    alert('Sesión iniciada: '+session.user.email);
+
+  if(!session){
+    const email=prompt('Correo del conductor:');
+    const password=prompt('Contraseña del conductor:');
+
+    if(!email||!password)return;
+
+    const {error}=await sb.auth.signInWithPassword({email,password});
+
+    if(error){
+      alert('No se pudo iniciar sesión: '+error.message);
+      return;
+    }
+  }
+
+  const {data:{user}}=await sb.auth.getUser();
+
+  if(!user){
+    alert('No se pudo identificar al conductor.');
     return;
   }
 
-  const email=prompt('Correo del conductor:');
-  const password=prompt('Contraseña del conductor:');
-  if(!email||!password)return;
-
-  const {error}=await sb.auth.signInWithPassword({email,password});
+  const {data:licencia,error}=await sb
+    .from('driver_licenses')
+    .select('status,expires_at')
+    .eq('auth_uid',user.id)
+    .maybeSingle();
 
   if(error){
-    alert('No se pudo iniciar sesión: '+error.message);
+    alert('No se pudo consultar la licencia: '+error.message);
+    await sb.auth.signOut();
     return;
   }
 
-  alert('Sesión iniciada correctamente.');
+  if(!licencia){
+    alert('No existe una licencia asociada a este conductor.');
+    await sb.auth.signOut();
+    return;
+  }
+
+  const hoy=new Date().toISOString().slice(0,10);
+  const activa=licencia.status==='Activa' && licencia.expires_at>=hoy;
+
+  if(!activa){
+    const estado=licencia.status==='Activa' && licencia.expires_at<hoy
+      ?'VENCIDA'
+      :String(licencia.status).toUpperCase();
+
+    alert('Acceso rechazado. Licencia '+estado+'.');
+    await sb.auth.signOut();
+    return;
+  }
+
+  alert('Sesión iniciada correctamente. Licencia ACTIVA hasta '+licencia.expires_at+'.');
 }
 
 function openPlan(){
