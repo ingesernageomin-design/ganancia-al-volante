@@ -216,21 +216,60 @@ async function driverLogin(){
   alert('Sesión iniciada correctamente. Licencia ACTIVA hasta '+licencia.expires_at+'.');
 }
 
-function openPlan(){
-  const active=licenseIsActive();
+async function openPlan(){
+  const {data:{session}}=await sb.auth.getSession();
+
+  if(!session){
+    openM(`<h2>💳 Plan y licencia</h2>
+    <div class="info">
+      <b>Estado de acceso</b>
+      <p>Para consultar su licencia central, debe iniciar sesión.</p>
+    </div>
+    <button class="btn primary" onclick="driverLogin()">🔐 INICIAR SESIÓN DEL CONDUCTOR</button>`);
+    return;
+  }
+
+  const {data:{user}}=await sb.auth.getUser();
+
+  if(!user){
+    alert('No se pudo identificar al conductor.');
+    return;
+  }
+
+  const {data:licencia,error}=await sb
+    .from('driver_licenses')
+    .select('status,expires_at')
+    .eq('auth_uid',user.id)
+    .maybeSingle();
+
+  if(error){
+    alert('No se pudo consultar la licencia: '+error.message);
+    return;
+  }
+
+  if(!licencia){
+    openM(`<h2>💳 Plan y licencia</h2>
+    <div class="info">
+      <b>Estado de acceso</b>
+      <p>No existe una licencia asociada a este conductor.</p>
+    </div>`);
+    return;
+  }
+
+  const hoy=new Date().toISOString().slice(0,10);
+  const activa=licencia.status==='Activa' && licencia.expires_at>=hoy;
+
   openM(`<h2>💳 Plan y licencia</h2>
   <div class="info">
-    <b>Plan actual</b>
-    <p>${s.plan||'30 días'}</p>
-    <span class="badge">${active?'Activo':'Vencido'}</span>
+    <b>Conductor</b>
+    <p>${user.email}</p>
   </div>
   <div class="info">
-    <b>Estado de acceso</b>
-    <p>Licencia de este dispositivo: ${active?'ACTIVA':'VENCIDA'}.</p>
-    ${s.licenseExpires?`<p>Vencimiento: ${s.licenseExpires}</p>`:''}
+    <b>Estado de licencia</b>
+    <p><span class="badge">${activa?'ACTIVA':'VENCIDA/BLOQUEADA'}</span></p>
+    <p>Vencimiento: ${licencia.expires_at}</p>
   </div>
-  <button class="btn primary" onclick="driverLogin()">🔐 INICIAR SESIÓN DEL CONDUCTOR</button>
-  <button class="btn primary" onclick="openPlanStatus()">REVISAR ESTADO</button>`);
+  <button class="btn primary" onclick="driverLogin()">🔐 ACTUALIZAR SESIÓN</button>`);
 }
 function openPlanStatus(){
   const active=licenseIsActive();
