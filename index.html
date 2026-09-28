@@ -89,7 +89,7 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 <div id="modal" class="modal"><div class="sheet"><button class="x" onclick="closeM()">×</button><div id="modalContent"></div></div></div>
 
 <script>
-const K='rn12', $=id=>document.getElementById(id), money=n=>new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',maximumFractionDigits:0}).format(n||0), today=()=>new Date().toISOString().slice(0,10);
+const K='rn12', $=id=>document.getElementById(id), money=n=>new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',maximumFractionDigits:0}).format(n||0),today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
 let s=JSON.parse(localStorage.getItem(K)||'{"e":[],"goal":850000,"vehicle":"Suzuki Swift 2022","eff":12,"fuel":1500,"minKm":450,"minHour":10000,"maint":0,"dateFmt":"DD/MM/AA","distance":"km","theme":"claro","plan":"30 días"}'),per='day';
 if(!s.licenseExpires){let d=new Date();d.setDate(d.getDate()+30);s.licenseExpires=d.toISOString().slice(0,10);localStorage.setItem(K,JSON.stringify(s));}
 function save(){localStorage.setItem(K,JSON.stringify(s));render()}
