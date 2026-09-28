@@ -343,6 +343,67 @@ function openGoal(){openM(`<h2>🎯 Meta mensual</h2><label>Ganancia objetivo CL
 function saveGoal(){s.goal=+$('goal').value;save();openM(`<h2>✅ Meta guardada</h2><p class="muted">Tu objetivo mensual es ${money(s.goal)}.</p><button class="btn primary" onclick="closeM()">ACEPTAR</button>`)}
 function openFuel(){openM(`<h2>⛽ Actualizar combustible</h2><label>Precio combustible CLP/L</label><input id="fprice" type="number" value="${s.fuel}"><p class="muted">Este precio se aplicará a los nuevos registros.</p><button class="btn primary" onclick="saveFuel()">GUARDAR PRECIO</button>`)}
 function saveFuel(){s.fuel=+$('fprice').value;save();openM(`<h2>✅ Precio actualizado</h2><p class="muted">Nuevo precio: ${money(s.fuel)} por litro.</p><button class="btn primary" onclick="closeM()">ACEPTAR</button>`)}
+  function openJornada(){
+  if(!s.jornadas)s.jornadas=[];
+
+  const hoy=today();
+  const abierta=s.jornadas.find(j=>j.d===hoy&&!j.fin);
+  const jornadasHoy=s.jornadas.filter(j=>j.d===hoy&&j.fin);
+  const totalMin=jornadasHoy.reduce((a,j)=>a+(j.minutos||0),0);
+  const horas=Math.floor(totalMin/60);
+  const minutos=totalMin%60;
+
+  openM(`
+    <h2>🕐 Jornada</h2>
+    <div class="info">
+      <b>Estado de hoy</b>
+      <p>${abierta?'🟢 JORNADA ABIERTA':'⚪ SIN JORNADA ABIERTA'}</p>
+      ${abierta?`<p>Inicio: ${new Date(abierta.inicio).toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'})}</p>`:''}
+      <p>Tiempo acumulado: ${horas} h ${minutos} min</p>
+    </div>
+    ${
+      abierta
+      ? `<button class="btn primary" onclick="closeJornada()">🔴 CERRAR JORNADA</button>`
+      : `<button class="btn primary" onclick="startJornada()">🟢 INICIAR JORNADA</button>`
+    }
+  `);
+}
+
+function startJornada(){
+  if(!s.jornadas)s.jornadas=[];
+  const hoy=today();
+
+  if(s.jornadas.some(j=>j.d===hoy&&!j.fin)){
+    return openJornada();
+  }
+
+  s.jornadas.push({
+    d:hoy,
+    inicio:new Date().toISOString(),
+    fin:null,
+    minutos:0
+  });
+
+  save();
+  openJornada();
+}
+
+function closeJornada(){
+  if(!s.jornadas)s.jornadas=[];
+
+  const hoy=today();
+  const j=s.jornadas.find(x=>x.d===hoy&&!x.fin);
+
+  if(!j){
+    return openJornada();
+  }
+
+  j.fin=new Date().toISOString();
+  j.minutos=Math.max(0,Math.round((new Date(j.fin)-new Date(j.inicio))/60000));
+
+  save();
+  openJornada();
+}
 function journey(t){const unit=(s.distance||'km')==='millas'?'Millas':'Km';openM(`<h2>${t==='trip'?'🚗 Registrar viaje':'📅 Registrar jornada'}</h2><label>Ingreso CLP</label><input id="ia" type="number"><div class="two"><div><label>${unit}</label><input id="ik" type="number"></div><div><label>Minutos</label><input id="im" type="number"></div></div><label>Plataforma</label><select id="ip"><option>Uber</option><option>DiDi</option><option>Cabify</option><option>Otra</option></select><button class="btn primary" onclick="saveJourney('${t}')">GUARDAR</button>`)}
 function saveJourney(t){if(!licenseIsActive())return openM(`<h2>⚠️ Licencia vencida</h2><p class="muted">Renueva la licencia para registrar nuevos viajes o jornadas.</p><button class="btn primary" onclick="openPlan()">REVISAR LICENCIA</button>`);let a=+$('ia').value;if(!a)return openM(`<h2>⚠️ Falta el monto</h2><p class="muted">Ingresa el monto del registro para continuar.</p><button class="btn primary" onclick="closeM()">ACEPTAR</button>`);let entered=+$('ik').value||0,k=(s.distance||'km')==='millas'?entered*1.609344:entered,m=+$('im').value||0,entry={t:'i',s:t,a,k,m,pl:$('ip').value,d:today()};if(t==='trip'){entry.eff=s.eff;entry.fuel=s.fuel} s.e.push(entry);save();openM(`<h2>✅ Registro guardado</h2><p class="muted">${t==='trip'?'El viaje':'La jornada'} quedó registrado correctamente.</p><button class="btn primary" onclick="closeM()">ACEPTAR</button>`)}
 function openExpense(){openM(`<h2>💸 Gasto</h2><label>Monto CLP</label><input id="ea" type="number"><label>Categoría</label><select id="ec"><option>Peajes</option><option>Estacionamiento</option><option>Mantención</option><option>Otros</option></select><button class="btn primary" onclick="saveExpense()">GUARDAR</button>`)}
