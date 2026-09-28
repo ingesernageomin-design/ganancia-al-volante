@@ -100,7 +100,7 @@ function applyTheme(){
   document.body.classList.toggle('dark',dark);
 }
 
-function data(p){let n=new Date(),a=new Date(n);if(p==='day')return s.e.filter(x=>x.d===today());if(p==='week'){a.setDate(n.getDate()-6);return s.e.filter(x=>x.d>=a.toISOString().slice(0,10)&&x.d<=today())}return s.e.filter(x=>x.d.slice(0,7)===today().slice(0,7))}
+function data(p){let n=new Date(),a=new Date(n);if(p==='day')return s.e.filter(x=>String(x.d).slice(0,10)===today()););if(p==='week'){a.setDate(n.getDate()-6);return s.e.filter(x=>x.d>=a.toISOString().slice(0,10)&&x.d<=today())}return s.e.filter(x=>x.d.slice(0,7)===today().slice(0,7))}
 function displayDistance(km){
   const n=+(km||0);
   return (s.distance||'km')==='millas' ? (n/1.609344).toFixed(1).replace('.',',')+' mi' : Math.round(n)+' km';
