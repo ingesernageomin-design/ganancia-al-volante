@@ -112,6 +112,7 @@ async function ensureAdminAuth(){
 <button onclick="openConfig()">⚙️ Configuración<small>Preferencias, datos y comportamiento de la aplicación</small></button>
 <button onclick="openHelp()">❓ Ayuda<small>Preguntas frecuentes y cómo usar Ganancia al Volante</small></button>
 <button onclick="openDrivers()">👥 Administrar conductores<small>Crear, renovar o bloquear licencias</small></button>
+  <button onclick="cerrarSesion()">🚪 Cerrar sesión</button>
 </div></div>
 </section>
 </main>
@@ -248,7 +249,20 @@ async function driverLogin(){
   alert('Sesión iniciada correctamente. Licencia ACTIVA hasta '+licencia.expires_at+'.');
 }
 
-async function openPlan(){
+async function cerrarSesion(){
+  const confirmar = confirm('¿Desea cerrar la sesión actual?');
+  if(!confirmar) return;
+
+  const {error} = await sb.auth.signOut();
+  if(error){
+    alert('No se pudo cerrar la sesión: '+error.message);
+    return;
+  }
+
+  alert('Sesión cerrada correctamente.');
+  await openPlan();
+}
+  async function openPlan(){
   const {data:{session}}=await sb.auth.getSession();
 
   if(!session){
