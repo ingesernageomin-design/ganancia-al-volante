@@ -36,16 +36,48 @@ body.dark .nav{border-top-color:#344250}
 const SUPABASE_URL = 'https://swbkdspvrqxmdmqiuwmv.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_XY7YW4o2w3OBcSy93mfivg_yhPraWSO';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
-    async function ensureAdminAuth(){
+
+async function ensureAdminAuth(){
   const {data:{session}}=await sb.auth.getSession();
-if(session?.user?.email?.toLowerCase()==='ingehgv@hotmail.com') return true;
+
+  if(session?.user?.email?.toLowerCase()==='ingehgv@hotmail.com') return true;
+
   const email=prompt('Correo del administrador:');
+  if(!email) return false;
+
+  if(email.trim().toLowerCase()!=='ingehgv@hotmail.com'){
+    alert('Correo de administrador incorrecto.');
+    return false;
+  }
+
+  const recuperar=confirm('¿Olvidó su contraseña?\\n\\nAceptar: enviar correo de recuperación.\\nCancelar: ingresar contraseña.');
+
+  if(recuperar){
+    const {error}=await sb.auth.resetPasswordForEmail(email.trim(),{
+      redirectTo:'https://ingesernageomin-design.github.io/ganancia-al-volante/'
+    });
+
+    if(error){
+      alert('No se pudo enviar el correo: '+error.message);
+      return false;
+    }
+
+    alert('Correo de recuperación enviado. Revise su bandeja de entrada y siga el enlace.');
+    return false;
+  }
+
   const password=prompt('Contraseña del administrador:');
-  if(!email||!password)return false;
-  const {error}=await sb.auth.signInWithPassword({email,password});
-  if(error){alert('No se pudo iniciar sesión: '+error.message);return false;}
+  if(!password) return false;
+
+  const {error}=await sb.auth.signInWithPassword({email:email.trim(),password});
+  if(error){
+    alert('No se pudo iniciar sesión: '+error.message);
+    return false;
+  }
+
   return true;
 }
+
 </script>
 </head>
 <body>
